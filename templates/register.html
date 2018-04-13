@@ -1,11 +1,30 @@
-<h1>用户注册</h1>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Title</title>
-</head>
-<body>
+{% extends "user.html" %}
+{% block content %}
+    <form>
+        <div class="form-group">
+            <label>账号</label>
+            <input type="text" class="form-control" placeholder="请输入账号：">
+        </div>
+        <div class="form-group">
+            <label>密码</label>
+            <input type="password" class="form-control" placeholder="请输入密码：">
+        </div>
+        <div class="form-group">
+            <label>确认密码</label>
+            <input type="password" class="form-control" placeholder="请输入确认密码：">
+        </div>
+        <div class="form-group">
+            <label>验证码</label>
+            <input type="text" class="form-control" placeholder="请输入验证码：">
+            <img src="holder.js/180*50" style="margin-top: 6px;">
+        </div>
+        <a href="/login/">已有账户前往登录</a><br>
+        <a class="btn btn-success" href="/login/">注册</a>
+    </form>
 
-</body>
-</html>
+{% endblock %}
+
+{% block js %}
+    <script src="{{ url_for('static',filename='js/holder.js') }}"></script>
+
+{% endblock %}
