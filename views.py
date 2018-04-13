@@ -15,7 +15,6 @@ def login():
 def register():
     return render_template("register.html", title="注册")
 
-
 # 用户退出（跳转到登录页面302重定向）
 @app.route("/logout/", methods=["GET"])
 def logout():
