@@ -76,12 +76,11 @@ class Codes:
             img_name=image_name,
             code=chars
         )
-
 #         image.show()
 #
 #
 # if __name__ == "__main__":
-#     c = Code()
+#     c = Codes()
 #     # print(c.random_chr())
 #     # print(c.random_dis())
 #     # print(c.random_color1())

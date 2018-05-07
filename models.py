@@ -8,7 +8,7 @@ from werkzeug.security import check_password_hash
 
 app = Flask(__name__)
 app.config["SQLALCHEMY_DATABASE_URI"] = "mysql+pymysql://root:root@localhost:3306/artcms"
-app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = True
+app.config["SQLALCHEMY_ON_TEARDOWN"] = True
 
 db = SQLAlchemy(app)
 

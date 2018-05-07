@@ -38,12 +38,12 @@ class LoginForm(FlaskForm):
             "class": "btn btn-primary"
         }
     )
-    def validate_pwd(self,field):
-        pwd=field.data
-        user=User.query.filter_by(name=self.name.data).first
+
+    def validate_pwd(self, field):
+        pwd = field.data
+        user = User.query.filter_by(name=self.name.data).first
         if not user.check_pwd(pwd):
             raise ValidationError("密码错误！")
-
 
 
 class RegisterForm(FlaskForm):
@@ -108,17 +108,19 @@ class RegisterForm(FlaskForm):
 
     # 自定义验证码验证功能
     def validate_code(self, field):
-        # code = field.data
+        code = field.data
         if not session.keys("code"):
             raise ValidationError("没有验证码！")
         if session.keys("code") and session["code"].lower() != code.lower():
             raise ValidationError("验证码错误!")
 
-
+#发布文章
 class ArtForm(FlaskForm):
     title = StringField(
         label="标题",
-        validators=[],
+        validators=[
+            DataRequired("标题不能为空")
+        ],
         description="验证码",
         render_kw={
             "class": "form-control",
@@ -127,7 +129,9 @@ class ArtForm(FlaskForm):
     )
     cate = SelectField(
         label="分类",
-        validators=[],
+        validators=[
+            DataRequired("分类不能为空")
+        ],
         description="分类",
         choices=[(1, "python"), (2, "test"), (3, "android")],
         default=1,
@@ -138,7 +142,9 @@ class ArtForm(FlaskForm):
     )
     logo = FileField(
         label="封面",
-        validators=[],
+        validators=[
+            DataRequired("封面不能为空")
+        ],
         description="封面",
         render_kw={
             "class": "form-control-file"
@@ -146,7 +152,9 @@ class ArtForm(FlaskForm):
     )
     content = TextAreaField(
         label="内容",
-        validators=[],
+        validators=[
+            DataRequired("内容不能为空")
+        ],
         description="内容",
         render_kw={
             "style": "height:300px:",
