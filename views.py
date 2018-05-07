@@ -1,19 +1,50 @@
 # coding:utf8
-from flask import Flask, render_template, redirect
+from flask import Flask, render_template, redirect, flash, session, Response
+from flask_sqlalchemy import SQLAlchemy
+from forms import LoginForm, RegisterForm, ArtForm
+from models import User, db
+from werkzeug.security import generate_password_hash
+import datetime
+import os
+import pymysql
 
 app = Flask(__name__)
+app.config["SECRET_KEY"] = "12345678"
 
 
 # 登录
 @app.route("/login/", methods=["GET", "POST]"])
 def login():
-    return render_template("login.html", title="登录")  # 渲染模版
+    form = LoginForm()
+    if form.validate_on_submit():
+        data = form.data
+        session["user"] = data["name"]
+        flash("登录成功", "ok")
+        return redirect("/login/")
+    return render_template("login.html", title="登录", form=form)  # 渲染模版
 
 
 # 用户注册
 @app.route("/register/", methods=["GET", "POST"])
 def register():
-    return render_template("register.html", title="注册")
+    form = RegisterForm()
+    if form.validate_on_submit():  # 验证注册数据
+        data = form.data
+        # 保存数据
+        user = User(
+            name=data["name"],
+            pwd=generate_password_hash(data["pwd"]),
+            addtime=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        )
+        db.session.add(user)
+        db.session.commit()
+        # 定义会话闪现
+        flash("注册成功，请登录！", "ok")
+        return redirect("/login/")
+    else:
+        flash("请输入正确信息", "err")
+
+    return render_template("register.html", title="注册", form=form)
 
 
 # 用户退出（跳转到登录页面302重定向）
@@ -25,7 +56,8 @@ def logout():
 # 发布文章
 @app.route("/art/add/", methods=["GET", "POST"])
 def art_add():
-    return render_template("art_add.html", title="发布文章")
+    form = ArtForm()
+    return render_template("art_add.html", title="发布文章", form=form)
 
 
 # 编辑文章
@@ -44,6 +76,20 @@ def art_del(id):
 @app.route("/art/list/", methods=["GET"])
 def art_lis():
     return render_template("art_list.html", title="文章列表")
+
+
+# 验证码
+@app.route("/codes/", methods=["GET"])
+def codes():
+    from codes import Codes
+    c = Codes()
+    info = c.create_code()
+    image = os.path.join(os.path.dirname(__file__), "static/code") + "/" + info["img_name"]
+    with open(image) as f:
+        image = f.read()
+    session["code"] = info["code"]
+    # print(session["code"])
+    return Response(image, mimetype="ipeg")
 
 
 if __name__ == '__main__':
