@@ -4,7 +4,7 @@
 # 发布文章：标题 分类 封面 内容 发布文章按钮
 from flask import session
 from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, SubmitField, SelectField, FileField, TextAreaField
+from wtforms import StringField, PasswordField, SubmitField, SelectField, FileField, TextAreaField,IntegerField
 from wtforms.validators import DataRequired, EqualTo, ValidationError
 from models import User
 
@@ -41,7 +41,7 @@ class LoginForm(FlaskForm):
 
     def validate_pwd(self, field):
         pwd = field.data
-        user = User.query.filter_by(name=self.name.data).first
+        user = User.query.filter_by(name=self.name.data).first()
         if not user.check_pwd(pwd):
             raise ValidationError("密码错误！")
 
@@ -73,7 +73,7 @@ class RegisterForm(FlaskForm):
         label="确认密码",
         validators=[
             DataRequired("确认密码不能为空！"),
-            EqualTo('pwd', message="两次密码不一致!")
+            EqualTo('pwd', message="两次密码不一致!"),
         ],
         description="确认密码",
         render_kw={
@@ -95,27 +95,87 @@ class RegisterForm(FlaskForm):
     submit = SubmitField(
         "注册",
         render_kw={
-            "class": "btn btn-success"
+            "class": "btn btn-success",
         }
     )
 
     # 自定义字段验证规则
     def validate_name(self, field):
         name = field.data
-        user = User.query.filter_by(name=name).count()
-        if user > 0:
+        user_num = User.query.filter_by(name=name).count()
+        if user_num > 0:
             raise ValidationError("账号已存在，不能重复注册")
 
     # 自定义验证码验证功能
     def validate_code(self, field):
         code = field.data
-        if not session.keys("code"):
+        if not session.get("code"):
             raise ValidationError("没有验证码！")
-        if session.keys("code") and session["code"].lower() != code.lower():
+        if session.get("code") and session["code"].lower() != code.lower():
             raise ValidationError("验证码错误!")
 
 #发布文章
 class ArtForm(FlaskForm):
+    title = StringField(
+        label="标题",
+        validators=[
+            DataRequired("标题不能为空")
+        ],
+        description="标题",
+        render_kw={
+            "class": "form-control",
+            "placeholder": "请输入标题;"
+        }
+    )
+    cate = SelectField(
+        label="分类",
+        validators=[
+            DataRequired("分类不能为空")
+        ],
+        description="分类",
+        choices=[(1, "python"), (2, "test"), (3, "android")],
+        default=1,
+        coerce=int,
+        render_kw={
+            "class": "form-control",
+        }
+    )
+    logo = FileField(
+        label="封面",
+        validators=[
+            DataRequired("封面不能为空")
+        ],
+        description="封面",
+        render_kw={
+            "class": "form-control-file",
+        }
+    )
+    content = TextAreaField(
+        label="内容",
+        validators=[
+            DataRequired("内容不能为空")
+        ],
+        description="内容",
+        render_kw={
+            "style": "height:300px:",
+            "id": "content",
+        }
+    )
+    submit = SubmitField(
+        "发布文章",
+        render_kw={
+            "class": "btn btn-primary",
+        }
+    )
+
+#编辑文章
+class ArtEditForm(FlaskForm):
+    id=IntegerField(
+        label="编号",
+        validators=[
+            DataRequired("编号不能为空")
+        ]
+    )
     title = StringField(
         label="标题",
         validators=[
@@ -147,7 +207,7 @@ class ArtForm(FlaskForm):
         ],
         description="封面",
         render_kw={
-            "class": "form-control-file"
+            "class": "form-control-file",
         }
     )
     content = TextAreaField(
@@ -158,12 +218,12 @@ class ArtForm(FlaskForm):
         description="内容",
         render_kw={
             "style": "height:300px:",
-            "id": "content"
+            "id": "content",
         }
     )
     submit = SubmitField(
-        "发布文章",
+        "编辑文章",
         render_kw={
-            "class": "btn btn-primary"
+            "class": "btn btn-primary",
         }
     )

@@ -5,7 +5,7 @@ import importlib
 importlib.reload(sys)
 from flask import Flask, render_template, redirect, flash, session, Response, url_for, request
 from flask_sqlalchemy import SQLAlchemy
-from forms import LoginForm, RegisterForm, ArtForm
+from forms import LoginForm, RegisterForm, ArtForm, ArtEditForm
 from models import User, db, Art
 from werkzeug.security import generate_password_hash
 import datetime
@@ -32,14 +32,14 @@ def user_login_req(f):
 
 
 # 登录
-@app.route("/login/", methods=["GET", "POST]"])
+@app.route("/login/", methods=["GET", "POST"])
 def login():
     form = LoginForm()
     if form.validate_on_submit():
         data = form.data
         session["user"] = data["name"]
         flash("登录成功", "ok")
-        return redirect("art/list/")
+        return redirect("/art/list/1/")
     return render_template("login.html", title="登录", form=form)  # 渲染模版
 
 
@@ -84,7 +84,7 @@ def change_name(name):
 
 # 发布文章
 @app.route("/art/add/", methods=["GET", "POST"])
-# @user_login_req
+@user_login_req
 def art_add():
     form = ArtForm()
     if form.validate_on_submit():
@@ -118,21 +118,57 @@ def art_add():
 @app.route("/art/edit/<int:id>/", methods=["GET", "POST"])
 @user_login_req
 def art_edit(id):  # 指定id
-    return render_template("art_edit.html")
+    art = Art.query.get_or_404(int(id))
+    form = ArtEditForm()
+    if request.method == "GET":
+        form.content.data = art.content
+        form.cate.data = art.cate
+        form.logo.data = art.logo
+    if form.validate_on_submit():
+        data = form.data
+        # 上传logo
+        file = secure_filename(form.logo.data.filename)
+        logo = change_name(file)
+        if not os.path.exists(app.config["UP"]):
+            os.makedirs(app.config["UP"])
+        # 保存文件
+        form.logo.data.save(app.config["UP"] + "/" + logo)
+        art.logo = logo
+        art.title = data["title"]
+        art.content = data["content"]
+        art.cate = data["cate"]
+        db.session.add(art)
+        db.session.commit()
+        flash("文章编辑成功", "ok")
+
+    return render_template("art_edit.html", form=form, title="编辑文章", art=art)
 
 
 # 删除文章
 @app.route("/art/del/<int:id>/", methods=["GET"])
-@user_login_req
+# @user_login_req
 def art_del(id):
-    return redirect("art/list")
+    art = Art.query.get_or_404(int(id))
+    db.session.delete(art)
+    db.session.commit()
+    flash("删除《%s》成功" % art.title, "ok")
+    return redirect("/art/list/1/")
 
 
 # 文章列表
-@app.route("/art/list/", methods=["GET"])
-@user_login_req
-def art_lis():
-    return render_template("art_list.html", title="文章列表")
+@app.route("/art/list/<int:page>/", methods=["GET"])
+# @user_login_req
+def art_list(page=None):
+    if page is None:
+        page = 1
+    user = User.query.filter_by(name=session["user"]).first()
+    page_data = Art.query.filter_by(
+        user_id=user.id
+    ).order_by(
+        Art.addtime.desc()
+    ).paginate(page=page, per_page=1)
+    cate = [(1, "python"), (2, "test"), (3, "android")]
+    return render_template("art_list.html", title="文章列表", page_data=page_data, cate=cate)
 
 
 # 验证码

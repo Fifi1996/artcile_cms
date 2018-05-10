@@ -35,7 +35,7 @@ class Art(db.Model):
     title = db.Column(db.String(100), nullable=False)  # 标题
     cate = db.Column(db.Integer, nullable=False)  # 分类
     user_id = db.Column(db.Integer, nullable=False)  # 作者
-    logo = db.Column(db.Integer, nullable=False)  # 封面
+    logo = db.Column(db.String(100), nullable=False)  # 封面
     content = db.Column(db.Text, nullable=False)
     addtime = db.Column(db.DateTime, nullable=False)  # 添加注册时间
 
