@@ -46,7 +46,7 @@ class Uploader
      * 构造函数
      * @param string $fileField 表单名称
      * @param array $config 配置项
-	 * @param string $type	处理文件上传的方式
+     * @param bool $base64 是否解析base64编码，可省略。若开启，则$fileField代表的是base64编码的字符串表单名
      */
     public function __construct($fileField, $config, $type = "upload")
     {
@@ -61,7 +61,7 @@ class Uploader
             $this->upFile();
         }
 
-        $this->stateMap['ERROR_TYPE_NOT_ALLOWED'] = mb_convert_encoding($this->stateMap['ERROR_TYPE_NOT_ALLOWED'], 'utf-8', 'auto');
+        $this->stateMap['ERROR_TYPE_NOT_ALLOWED'] = iconv('unicode', 'utf-8', $this->stateMap['ERROR_TYPE_NOT_ALLOWED']);
     }
 
     /**
@@ -172,11 +172,6 @@ class Uploader
     {
         $imgUrl = htmlspecialchars($this->fileField);
         $imgUrl = str_replace("&amp;", "&", $imgUrl);
-	    
-        //获取带有GET参数的真实图片url路径
-        $pathRes     = parse_url($imgUrl);
-        $queryString = isset($pathRes['query']) ? $pathRes['query'] : '';
-        $imgUrl      = str_replace('?' . $queryString, '', $imgUrl);
 
         //http开头验证
         if (strpos($imgUrl, "http") !== 0) {
@@ -184,14 +179,14 @@ class Uploader
             return;
         }
         //获取请求头并检测死链
-        $heads = get_headers($imgUrl, 1);
+        $heads = get_headers($imgUrl);
         if (!(stristr($heads[0], "200") && stristr($heads[0], "OK"))) {
             $this->stateInfo = $this->getStateInfo("ERROR_DEAD_LINK");
             return;
         }
         //格式验证(扩展名验证和Content-Type验证)
         $fileType = strtolower(strrchr($imgUrl, '.'));
-        if (!in_array($fileType, $this->config['allowFiles']) || !isset($heads['Content-Type']) || !stristr($heads['Content-Type'], "image")) {
+        if (!in_array($fileType, $this->config['allowFiles']) || stristr($heads['Content-Type'], "image")) {
             $this->stateInfo = $this->getStateInfo("ERROR_HTTP_CONTENTTYPE");
             return;
         }
@@ -203,7 +198,7 @@ class Uploader
                 'follow_location' => false // don't follow redirects
             ))
         );
-        readfile($imgUrl . '?' . $queryString, false, $context);
+        readfile($imgUrl, false, $context);
         $img = ob_get_contents();
         ob_end_clean();
         preg_match("/[\/]([^\/]*)[\.]?[^\.\/]*$/", $imgUrl, $m);
@@ -219,12 +214,6 @@ class Uploader
         //检查文件大小是否超出限制
         if (!$this->checkSize()) {
             $this->stateInfo = $this->getStateInfo("ERROR_SIZE_EXCEED");
-            return;
-        }
-
-        //检查文件内容是否真的是图片
-        if (substr(mime_content_type($this->filePath), 0, 5) != 'image') {
-            $this->stateInfo = $this->getStateInfo("ERROR_TYPE_NOT_ALLOWED");
             return;
         }
 
@@ -284,7 +273,7 @@ class Uploader
         $format = str_replace("{ss}", $d[6], $format);
         $format = str_replace("{time}", $t, $format);
 
-        //过滤文件名的非法字符,并替换文件名
+        //过滤文件名的非法自负,并替换文件名
         $oriName = substr($this->oriName, 0, strrpos($this->oriName, '.'));
         $oriName = preg_replace("/[\|\?\"\<\>\/\*\\\\]+/", '', $oriName);
         $format = str_replace("{filename}", $oriName, $format);
@@ -295,11 +284,7 @@ class Uploader
             $format = preg_replace("/\{rand\:[\d]*\}/i", substr($randNum, 0, $matches[1]), $format);
         }
 
-        if($this->fileType){
-            $ext = $this->fileType;
-        } else {
-            $ext = $this->getFileExt();
-        }
+        $ext = $this->getFileExt();
         return $format . $ext;
     }
 
